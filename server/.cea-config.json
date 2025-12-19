@@ -1,0 +1,18 @@
+{
+  "name": "my-app",
+  "language": "typescript",
+  "template": "typescript/none",
+  "database": "None",
+  "orm": "none",
+  "structure": "standard",
+  "includesCommon": true,
+  "folders": {
+    "config": "src/config",
+    "controllers": "src/controllers",
+    "middleware": "src/middleware",
+    "models": "src/models",
+    "routes": "src/routes",
+    "services": "src/services",
+    "utils": "src/utils"
+  }
+}
