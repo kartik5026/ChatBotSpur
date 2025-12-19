@@ -27,7 +27,10 @@ export async function postChatMessage(args: {
 
 	const history = recent
 		.reverse()
-		.map((m) => ({ sender: m.sender as 'user' | 'ai', text: m.text }));
+		.map((m: { sender: unknown; text: string }) => ({
+			sender: m.sender as 'user' | 'ai',
+			text: m.text,
+		}));
 
 	const reply = await generateReply({ history, userMessage: args.message });
 
@@ -56,7 +59,7 @@ export async function getChatHistory(args: {
 
 	return {
 		sessionId: args.sessionId,
-		messages: messages.map((m) => ({
+		messages: messages.map((m: { id: string; sender: string; text: string; createdAt: Date }) => ({
 			id: m.id,
 			sender: m.sender,
 			text: m.text,

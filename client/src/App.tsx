@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './lib/api'
 
@@ -11,6 +12,7 @@ type ChatMessage = {
 const SESSION_KEY = 'spur_takehome_session_id'
 
 function App() {
+  const isDeployed = Boolean(import.meta.env.PROD && import.meta.env.VITE_API_BASE_URL)
   const [sessionId, setSessionId] = useState<string | null>(() => {
     return localStorage.getItem(SESSION_KEY)
   })
@@ -18,6 +20,7 @@ function App() {
   const [draft, setDraft] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showColdStartNote, setShowColdStartNote] = useState<boolean>(isDeployed)
 
   const listRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
@@ -48,9 +51,12 @@ function App() {
         const data = res.data
         if (ignore) return
         setMessages(data.messages ?? [])
-      } catch {
+      } catch (err) {
         if (ignore) return
         setError('Failed to load chat history.')
+        if (axios.isAxiosError(err) && (!err.response || err.code === 'ECONNABORTED')) {
+          setShowColdStartNote(true)
+        }
       }
     }
 
@@ -93,7 +99,10 @@ function App() {
         ...prev,
         { id: `${now}-ai`, sender: 'ai', text: data.reply ?? '', createdAt: now },
       ])
-    } catch {
+    } catch (err) {
+      if (axios.isAxiosError(err) && (!err.response || err.code === 'ECONNABORTED')) {
+        setShowColdStartNote(true)
+      }
       const errNow = new Date().toISOString()
       setMessages((prev) => [
         ...prev,
@@ -131,6 +140,28 @@ function App() {
           New chat
         </button>
       </div>
+
+      {showColdStartNote ? (
+        <div className="mb-4 rounded-xl border border-amber-400/20 bg-amber-500/10 p-3 text-sm text-amber-100">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="m-0 font-medium">Note about production (Render) cold starts</p>
+              <p className="m-0 mt-1 text-xs text-amber-100/80">
+                If the backend is hosted on Render, the first request after inactivity can take{' '}
+                <span className="font-semibold">2–3 minutes</span> to wake up. If requests seem stuck or time out,
+                wait a bit, refresh, and try again.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="rounded-md border border-amber-300/20 bg-amber-200/10 px-2 py-1 text-xs hover:bg-amber-200/20"
+              onClick={() => setShowColdStartNote(false)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-sm">
         <div
