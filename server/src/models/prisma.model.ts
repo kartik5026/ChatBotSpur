@@ -3,6 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import config from '@/config/environment';
 import dns from 'node:dns';
+import net from 'node:net';
 
 // Render commonly has no IPv6 egress. Prefer IPv4 when DNS returns both A/AAAA.
 // This prevents errors like ENETUNREACH <ipv6>:5432.
@@ -22,7 +23,17 @@ function createPgPool() {
 			? { rejectUnauthorized: false }
 			: undefined;
 
-	// `lookup` is a valid Node net.connect option that `pg` forwards, but it's not in pg's TS types.
+	// Force IPv4 at the socket level. pg internally calls `socket.connect(port, host)`
+	// (without passing family options), so we override connect() to prefer IPv4.
+	const stream = () => {
+		const socket = new net.Socket();
+		const originalConnect = socket.connect.bind(socket);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(socket as any).connect = (port: number, host: string) =>
+			originalConnect({ port, host, family: 4 });
+		return socket;
+	};
+
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const poolConfig: any = {
 		host: url.hostname,
@@ -31,9 +42,7 @@ function createPgPool() {
 		password: decodeURIComponent(url.password),
 		database: url.pathname.replace(/^\//, ''),
 		ssl,
-		// Force IPv4 lookup to avoid Render IPv6 egress issues
-		lookup: (hostname: string, options: unknown, cb: unknown) =>
-			dns.lookup(hostname, { ...(options as object), family: 4 }, cb as any),
+		stream,
 	};
 
 	return new Pool(poolConfig);
