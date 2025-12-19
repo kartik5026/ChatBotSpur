@@ -1,10 +1,19 @@
 import 'dotenv/config';
 
+const clientUrls = [
+	process.env.CLIENT_URL,
+	...(process.env.CLIENT_URLS ? process.env.CLIENT_URLS.split(',') : []),
+]
+	.map((s) => s?.trim())
+	.filter((s): s is string => Boolean(s));
+
 const config = {
 	env: process.env.NODE_ENV || 'development',
 	port: parseInt(process.env.PORT || '4000'),
 	host: process.env.HOST || 'localhost',
 	clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+	clientUrls,
+	allowVercelAppOrigins: process.env.ALLOW_VERCEL_APP_ORIGINS === 'true',
 	logLevel: process.env.LOG_LEVEL || 'info',
 	databaseUrl: process.env.DATABASE_URL,
 	groqApiKey: process.env.GROQ_API_KEY,

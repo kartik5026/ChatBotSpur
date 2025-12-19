@@ -29,8 +29,17 @@ app.use(
 // CORS
 app.use(
 	cors({
-		origin: config.clientUrl,
-		credentials: true,
+		origin: (origin, callback) => {
+			// Allow non-browser clients (curl/postman) with no Origin header
+			if (!origin) return callback(null, true);
+
+			const isAllowed =
+				config.clientUrls.includes(origin) ||
+				(config.allowVercelAppOrigins && origin.endsWith('.vercel.app'));
+
+			return callback(isAllowed ? null : new Error('Not allowed by CORS'), isAllowed);
+		},
+		credentials: false,
 	}),
 );
 
