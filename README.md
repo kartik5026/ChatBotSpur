@@ -1,4 +1,4 @@
-# Spur Take-Home — AI Live Chat Agent (Groq + Postgres)
+# Spur — AI Live Chat Agent (Groq + Postgres)
 
 Mini web app that simulates a customer support chat where an AI agent answers questions using a real LLM (Groq) and persists conversations to Postgres via Prisma.
 
